@@ -33,9 +33,23 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
     });
   };
 
+  const isImageFile = (file) => {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/bmp',
+      'image/tiff',
+      'image/svg+xml'
+    ];
+    return allowedTypes.includes(file.type.toLowerCase());
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
-
+    
     if (file) {
       // Check file size (2MB limit)
       if (file.size > 2 * 1024 * 1024) {
@@ -43,9 +57,9 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
         return;
       }
 
-      // Check file type
-      if (!file.type.startsWith("image/")) {
-        setError("Please select a valid image file");
+      // Check if it's a valid image file
+      if (!isImageFile(file)) {
+        setError("Please select a valid image file (JPG, PNG, WebP, GIF, BMP, TIFF, SVG)");
         return;
       }
 
@@ -88,28 +102,22 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
+    
     console.log("Form submitted with data:", formData);
-
+    
     try {
       const response = await axios.post(
         "http://localhost:5000/api/patients",
         formData
       );
-
+      
       console.log("Success:", response.data);
       onPatientAdded(response.data);
       resetForm();
       onClose();
     } catch (error) {
-      console.error(
-        "Error adding patient:",
-        error.response?.data || error.message
-      );
-      setError(
-        error.response?.data?.error ||
-          "Failed to add patient. Please try again."
-      );
+      console.error("Error adding patient:", error.response?.data || error.message);
+      setError(error.response?.data?.error || "Failed to add patient. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -126,13 +134,13 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
         <dialog id="my_modal_1" className="modal modal-open font-figtree">
           <div className="modal-box">
             <h3 className="font-bold text-2xl mb-4">Add Patient</h3>
-
+            
             {error && (
               <div className="alert alert-error mb-4">
                 <span>{error}</span>
               </div>
             )}
-
+            
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-4 grid-rows-6 w-full gap-1">
                 <fieldset className="fieldset col-span-2">
@@ -161,7 +169,6 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                     placeholder="Type here"
                     value={formData.whatsapp}
                     onChange={handleChange}
-                    required
                   />
                 </fieldset>
 
@@ -221,19 +228,20 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
 
                 <fieldset className="fieldset col-span-4">
                   <legend className="fieldset-legend text-sm">Image</legend>
-                  <input
-                    type="file"
+                  <input 
+                    type="file" 
                     name="image"
                     className="file-input w-full"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/svg+xml"
                     onChange={handleFileChange}
                   />
-                  <label className="label">Max size 2MB</label>
+                  
+                 
                 </fieldset>
               </div>
-
+              
               <p className="py-4"></p>
-
+              
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
@@ -243,8 +251,8 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
+                <button 
+                  type="submit" 
                   className="btn btn-primary"
                   disabled={isLoading}
                 >
@@ -253,7 +261,7 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
               </div>
             </form>
           </div>
-
+          
           <div className="modal-backdrop" onClick={handleClose}>
             <button type="button">close</button>
           </div>
