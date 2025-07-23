@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
       last_treatment,
       image,
     } = req.body;
-      const registeredDate = registered || new Date().toISOString().split('T')[0];
+    const registeredDate = registered || new Date().toISOString().split("T")[0];
     const { data, error } = await supabase
       .from("patients")
       .insert([
@@ -35,7 +35,7 @@ router.post("/", async (req, res) => {
           whatsapp,
           addres,
           registered: registeredDate,
-         last_visit: last_visit || null, 
+          last_visit: last_visit || null,
           last_treatment,
           image,
         },

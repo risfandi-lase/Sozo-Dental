@@ -13,7 +13,6 @@ function ActiveTreatment() {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  useEffect(() => {
     const fetchPatients = async () => {
       try {
         const response = await axios.get("http://localhost:5000/api/patients");
@@ -25,8 +24,25 @@ function ActiveTreatment() {
       }
     };
 
+
+useEffect(() => {
     fetchPatients();
   }, []);
+
+
+    const handleDelete = async (patientId) => {
+    if (!window.confirm("Are you sure you want to delete this Patient?"))
+      return;
+
+    try {
+      await axios.delete(`http://localhost:5000/api/patients/${patientId}`);
+      fetchPatients();
+    } catch (err) {
+      console.error(err.message);
+      alert("Failed to delete product.");
+    }
+  };
+
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -54,10 +70,10 @@ function ActiveTreatment() {
     // If patient has an image
     if (patient.image) {
       // Check if the image already includes the data:image prefix
-      const imageSrc = patient.image.startsWith('data:image') 
-        ? patient.image 
+      const imageSrc = patient.image.startsWith("data:image")
+        ? patient.image
         : `data:image/jpeg;base64,${patient.image}`;
-      
+
       return (
         <img
           src={imageSrc}
@@ -108,7 +124,8 @@ function ActiveTreatment() {
             />
           </div>
           <p>
-            <span className="text-3xl ml-2">{patients.length}</span> total patients
+            <span className="text-3xl ml-2">{patients.length}</span> total
+            patients
           </p>
         </div>
 
@@ -171,7 +188,10 @@ function ActiveTreatment() {
                     type="checkbox"
                     className="checkbox"
                     onChange={handleSelectAll}
-                    checked={selectedPatients.length === patients.length && patients.length > 0}
+                    checked={
+                      selectedPatients.length === patients.length &&
+                      patients.length > 0
+                    }
                   />
                 </label>
               </th>
@@ -219,17 +239,17 @@ function ActiveTreatment() {
                 <td>{patient.last_treatment}</td>
                 <td className="flex gap-2">
                   <button className="btn btn-primary text-xs">Edit</button>
-                  <button className="btn btn-secondary text-xs">Del</button>
+                  <button className="btn btn-secondary text-xs" onClick={() => handleDelete(patient.id)}>Del</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      
-      <AddPatientModal 
-        isOpen={isModalOpen} 
-        onClose={closeModal} 
+
+      <AddPatientModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
         onPatientAdded={handlePatientAdded}
       />
     </div>
