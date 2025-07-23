@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+}
+
+@theme {
+  --font-vollkorn: Vollkorn, sans-serif;
+  --font-figtree: Figtree, sans-serif;
+}
+
