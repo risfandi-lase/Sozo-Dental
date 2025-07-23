@@ -8,8 +8,7 @@ function ActiveTreatment() {
   const [selectedPatients, setSelectedPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -29,7 +28,6 @@ function ActiveTreatment() {
     fetchPatients();
   }, []);
 
-
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedPatients(patients.map((patient) => patient.id));
@@ -48,6 +46,45 @@ function ActiveTreatment() {
     }
   };
 
+  const handlePatientAdded = (newPatient) => {
+    setPatients((prevPatients) => [...prevPatients, newPatient]);
+  };
+
+  const renderPatientImage = (patient) => {
+    // If patient has an image
+    if (patient.image) {
+      // Check if the image already includes the data:image prefix
+      const imageSrc = patient.image.startsWith('data:image') 
+        ? patient.image 
+        : `data:image/jpeg;base64,${patient.image}`;
+      
+      return (
+        <img
+          src={imageSrc}
+          alt={patient.name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback if image fails to load
+            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              patient.name
+            )}&size=48&background=random`;
+          }}
+        />
+      );
+    } else {
+      // Default avatar if no image
+      return (
+        <img
+          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+            patient.name
+          )}&size=48&background=random`}
+          alt={patient.name}
+          className="w-full h-full object-cover"
+        />
+      );
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -58,7 +95,6 @@ function ActiveTreatment() {
 
   return (
     <div className="h-full flex flex-col font-figtree">
-
       {/* Controls section - Fixed at top */}
       <div className="flex items-center justify-between px-16 py-4 flex-shrink-0 bg-white">
         {/* Left side - Patient count */}
@@ -72,7 +108,7 @@ function ActiveTreatment() {
             />
           </div>
           <p>
-            <span className="text-3xl ml-2">98</span> total patients
+            <span className="text-3xl ml-2">{patients.length}</span> total patients
           </p>
         </div>
 
@@ -125,7 +161,6 @@ function ActiveTreatment() {
 
       {/* Table container - Scrollable */}
       <div className="flex-1 overflow-auto px-16">
-
         <table className="table">
           {/* head */}
           <thead className="bg-base-300 sticky top-0 z-10">
@@ -136,7 +171,7 @@ function ActiveTreatment() {
                     type="checkbox"
                     className="checkbox"
                     onChange={handleSelectAll}
-                    checked={selectedPatients.length === patients.length}
+                    checked={selectedPatients.length === patients.length && patients.length > 0}
                   />
                 </label>
               </th>
@@ -166,28 +201,7 @@ function ActiveTreatment() {
                   <div className="flex items-center gap-3">
                     <div className="avatar">
                       <div className="mask mask-circle w-12 h-12">
-                        {patient.image ? (
-                          <img
-                            src={patient.image.startsWith('data:image') ? patient.image : `data:image/jpeg;base64,${patient.image}`}
-                            alt={patient.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Fallback if image fails to load
-                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                patient.name
-                              )}&size=48&background=random`;
-                            }}
-                          />
-                        ) : (
-                          // Default avatar if no image
-                          <img
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              patient.name
-                            )}&size=48&background=random`}
-                            alt={patient.name}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
+                        {renderPatientImage(patient)}
                       </div>
                     </div>
                     <div>
@@ -212,9 +226,12 @@ function ActiveTreatment() {
           </tbody>
         </table>
       </div>
-                                  <AddPatientModal isOpen={isModalOpen} onClose={closeModal}/>
-
-
+      
+      <AddPatientModal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        onPatientAdded={handlePatientAdded}
+      />
     </div>
   );
 }
