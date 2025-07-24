@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import AddDoctorModal from "../Components/AddDoctorModal";
 
 function StaffList() {
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
   // Staff data
@@ -288,7 +290,7 @@ function StaffList() {
         </div>
 
         <div className="flex items-center gap-8">
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={() => setIsOpen(true)}>
             <Icon
               icon="mingcute:add-fill"
               width="18"
@@ -298,6 +300,8 @@ function StaffList() {
           </button>
         </div>
       </div>
+
+      <AddDoctorModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
 
       {/* Table */}
       <div className="overflow-x-auto px-16">
