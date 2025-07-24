@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import AddPatientModal from "./AddPatientModal";
+import EditPatientModal from "./EditPatientModal";
 
 function ActiveTreatment() {
   const [patients, setPatients] = useState([]);
@@ -9,28 +10,34 @@ function ActiveTreatment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editPatient, setEditPatient] = useState(null)
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-    const fetchPatients = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/patients");
-        setPatients(response.data);
-      } catch (error) {
-        setError(error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const openEditModal = () => setIsEditOpen(true);
+  const closeEditModal = () => {
+    setIsEditOpen(false);
+    setEditPatient(null); // Reset the patient when closing
+  };
 
+  const fetchPatients = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/patients");
+      setPatients(response.data);
+    } catch (error) {
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-useEffect(() => {
+  useEffect(() => {
     fetchPatients();
   }, []);
 
-
-    const handleDelete = async (patientId) => {
+  const handleDelete = async (patientId) => {
     if (!window.confirm("Are you sure you want to delete this Patient?"))
       return;
 
@@ -39,10 +46,9 @@ useEffect(() => {
       fetchPatients();
     } catch (err) {
       console.error(err.message);
-      alert("Failed to delete product.");
+      alert("Failed to delete patient.");
     }
   };
-
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -64,6 +70,11 @@ useEffect(() => {
 
   const handlePatientAdded = (newPatient) => {
     setPatients((prevPatients) => [...prevPatients, newPatient]);
+  };
+
+  const handleEditPatient = (patient) => {
+    setEditPatient(patient);
+    openEditModal();
   };
 
   const renderPatientImage = (patient) => {
@@ -238,8 +249,18 @@ useEffect(() => {
                 <td>{patient.last_visit}</td>
                 <td>{patient.last_treatment}</td>
                 <td className="flex gap-2">
-                  <button className="btn btn-primary text-xs">Edit</button>
-                  <button className="btn btn-secondary text-xs" onClick={() => handleDelete(patient.id)}>Del</button>
+                  <button 
+                    className="btn btn-primary text-xs" 
+                    onClick={() => handleEditPatient(patient)}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    className="btn btn-secondary text-xs" 
+                    onClick={() => handleDelete(patient.id)}
+                  >
+                    Del
+                  </button>
                 </td>
               </tr>
             ))}
@@ -251,6 +272,13 @@ useEffect(() => {
         isOpen={isModalOpen}
         onClose={closeModal}
         onPatientAdded={handlePatientAdded}
+      />
+
+      <EditPatientModal
+        isOpen={isEditOpen}
+        onClose={closeEditModal}
+        fetchPatients={fetchPatients}
+        patient={editPatient} 
       />
     </div>
   );

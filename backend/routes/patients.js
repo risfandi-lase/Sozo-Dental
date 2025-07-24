@@ -53,10 +53,26 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, whatsapp, addres, last_visit } = req.body;
+    const {
+      name,
+      whatsapp,
+      addres,
+      registered,
+      last_visit,
+      last_treatment,
+      image,
+    } = req.body;
     const { data, error } = await supabase
       .from("patients")
-      .update({ name, whatsapp, addres, last_visit })
+      .update({
+        name,
+        whatsapp,
+        addres,
+        registered,
+        last_visit: last_visit || null,
+        last_treatment,
+        image,
+      })
       .eq("id", id)
       .select();
 

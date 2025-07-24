@@ -1,20 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
-function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    whatsapp: "",
-    addres: "",
-    registered: "",
-    last_visit: "",
-    last_treatment: "",
-    image: null,
-  });
-
+function EditPatientModal({ isOpen, onClose, fetchPatients, patient }) {
+  const [formData, setFormData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+
+  useEffect(() => {
+    if (patient) {
+      setFormData({
+        name: patient.name || "",
+        whatsapp: patient.whatsapp || "",
+        addres: patient.addres || "",
+        registered: patient.registered || "",
+        last_visit: patient.last_visit || "",
+        last_treatment: patient.last_treatment || "",
+        image: patient.image || "",
+      });
+      setImagePreview(patient.image || null);
+    }
+  }, [patient]);
+
+  if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,6 +59,11 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
     const file = e.target.files[0];
 
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setError("Image size must be less than 2MB");
+        return;
+      }
+
       if (!isImageFile(file)) {
         setError(
           "Please select a valid image file (JPG, PNG, WebP, GIF, BMP, TIFF, SVG)"
@@ -79,45 +92,27 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      whatsapp: "",
-      addres: "",
-      registered: "",
-      last_visit: "",
-      last_treatment: "",
-      image: null,
-    });
-    setError("");
-    setImagePreview(null);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    console.log("Form submitted with data:", formData);
-
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/patients",
+      const response = await axios.put(
+        `http://localhost:5000/api/patients/${patient.id}`,
         formData
       );
 
-      console.log("Success:", response.data);
-      onPatientAdded(response.data);
-      resetForm();
-      onClose();
+      if (response.status === 200) {
+        fetchPatients();
+        onClose();
+      } else {
+        setError("Failed to update patient. Please try again.");
+      }
     } catch (error) {
-      console.error(
-        "Error adding patient:",
-        error.response?.data || error.message
-      );
+      console.error("Error updating patient:", error);
       setError(
-        error.response?.data?.error ||
-          "Failed to add patient. Please try again."
+        `An error occurred while updating the patient: ${error.message}`
       );
     } finally {
       setIsLoading(false);
@@ -125,7 +120,6 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
   };
 
   const handleClose = () => {
-    resetForm();
     onClose();
   };
 
@@ -134,7 +128,7 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
       {isOpen && (
         <dialog id="my_modal_1" className="modal modal-open font-figtree">
           <div className="modal-box">
-            <h3 className="font-bold text-2xl mb-4">Add Patient</h3>
+            <h3 className="font-bold text-2xl mb-4">Edit Patient</h3>
 
             {error && (
               <div className="alert alert-error mb-4">
@@ -149,39 +143,39 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                     Patient Name *
                   </legend>
                   <input
+                    value={formData.name || ""}
+                    onChange={handleChange}
                     type="text"
                     name="name"
                     className="input w-full"
                     placeholder="Type here"
-                    value={formData.name}
-                    onChange={handleChange}
                     required
                   />
                 </fieldset>
 
                 <fieldset className="fieldset col-span-2">
                   <legend className="fieldset-legend text-sm">
-                    WhatsApp Number
+                    WhatsApp Number *
                   </legend>
                   <input
+                    value={formData.whatsapp || ""}
+                    onChange={handleChange}
                     type="number"
                     name="whatsapp"
                     className="input w-full"
                     placeholder="Type here"
-                    value={formData.whatsapp}
-                    onChange={handleChange}
                   />
                 </fieldset>
 
                 <fieldset className="fieldset col-span-4">
                   <legend className="fieldset-legend text-sm">Address</legend>
                   <input
+                    value={formData.addres || ""}
+                    onChange={handleChange}
                     type="text"
                     name="addres"
                     className="input w-full"
                     placeholder="Type here"
-                    value={formData.addres}
-                    onChange={handleChange}
                   />
                 </fieldset>
 
@@ -190,12 +184,12 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                     Registered
                   </legend>
                   <input
+                    value={formData.registered || ""}
+                    onChange={handleChange}
                     type="date"
                     name="registered"
                     className="input w-full"
                     placeholder="Type here"
-                    value={formData.registered}
-                    onChange={handleChange}
                   />
                 </fieldset>
 
@@ -204,12 +198,12 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                     Last Visit
                   </legend>
                   <input
+                    value={formData.last_visit || ""}
+                    onChange={handleChange}
                     type="date"
                     name="last_visit"
                     className="input w-full"
                     placeholder="Select date"
-                    value={formData.last_visit}
-                    onChange={handleChange}
                   />
                 </fieldset>
 
@@ -218,12 +212,12 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                     Last Treatment
                   </legend>
                   <input
+                    value={formData.last_treatment || ""}
+                    onChange={handleChange}
                     type="text"
                     name="last_treatment"
                     className="input w-full"
                     placeholder="Type here"
-                    value={formData.last_treatment}
-                    onChange={handleChange}
                   />
                 </fieldset>
 
@@ -254,7 +248,7 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={handleClose}
+                  onClick={onClose}
                   disabled={isLoading}
                 >
                   Cancel
@@ -279,4 +273,4 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
   );
 }
 
-export default AddPatientModal;
+export default EditPatientModal;
