@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import AddPatientModal from "./AddPatientModal";
@@ -10,8 +10,12 @@ function ActiveTreatment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [editPatient, setEditPatient] = useState(null)
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editPatient, setEditPatient] = useState(null);
+
+  // New state for search and sort
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("dateAdded");
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -19,7 +23,7 @@ function ActiveTreatment() {
   const openEditModal = () => setIsEditOpen(true);
   const closeEditModal = () => {
     setIsEditOpen(false);
-    setEditPatient(null); // Reset the patient when closing
+    setEditPatient(null);
   };
 
   const fetchPatients = async () => {
@@ -37,6 +41,56 @@ function ActiveTreatment() {
     fetchPatients();
   }, []);
 
+  // Filtered and sorted patients using useMemo for performance
+  const filteredAndSortedPatients = useMemo(() => {
+    let filtered = patients;
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = patients.filter((patient) => {
+        const name = patient.name?.toString().toLowerCase() || "";
+        const whatsapp = patient.whatsapp?.toString().toLowerCase() || "";
+        const address = patient.addres?.toString().toLowerCase() || "";
+        const lastTreatment =
+          patient.last_treatment?.toString().toLowerCase() || "";
+
+        return (
+          name.includes(searchLower) ||
+          whatsapp.includes(searchLower) ||
+          address.includes(searchLower) ||
+          lastTreatment.includes(searchLower)
+        );
+      });
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+
+        case "lasttreatment":
+          // Sort by last_treatment date (assuming it's a date string)
+          if (!a.last_treatment && !b.last_treatment) return 0;
+          if (!a.last_treatment) return 1;
+          if (!b.last_treatment) return -1;
+          return new Date(b.last_treatment) - new Date(a.last_treatment);
+
+        case "dateAdded":
+        default:
+          // Sort by registered date or id (most recent first)
+          if (a.registered && b.registered) {
+            return new Date(b.registered) - new Date(a.registered);
+          }
+          // Fallback to id if registered dates aren't available
+          return b.id - a.id;
+      }
+    });
+
+    return sorted;
+  }, [patients, searchTerm, sortBy]);
+
   const handleDelete = async (patientId) => {
     if (!window.confirm("Are you sure you want to delete this Patient?"))
       return;
@@ -52,7 +106,9 @@ function ActiveTreatment() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedPatients(patients.map((patient) => patient.id));
+      setSelectedPatients(
+        filteredAndSortedPatients.map((patient) => patient.id)
+      );
     } else {
       setSelectedPatients([]);
     }
@@ -77,10 +133,18 @@ function ActiveTreatment() {
     openEditModal();
   };
 
+  // Search handler
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Sort handler
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+  };
+
   const renderPatientImage = (patient) => {
-    // If patient has an image
     if (patient.image) {
-      // Check if the image already includes the data:image prefix
       const imageSrc = patient.image.startsWith("data:image")
         ? patient.image
         : `data:image/jpeg;base64,${patient.image}`;
@@ -91,7 +155,6 @@ function ActiveTreatment() {
           alt={patient.name}
           className="w-full h-full object-cover"
           onError={(e) => {
-            // Fallback if image fails to load
             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
               patient.name
             )}&size=48&background=random`;
@@ -99,7 +162,6 @@ function ActiveTreatment() {
         />
       );
     } else {
-      // Default avatar if no image
       return (
         <img
           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -135,8 +197,10 @@ function ActiveTreatment() {
             />
           </div>
           <p>
-            <span className="text-3xl ml-2">{patients.length}</span> total
-            patients
+            <span className="text-3xl ml-2">
+              {filteredAndSortedPatients.length}
+            </span>
+            {searchTerm ? ` of ${patients.length}` : ""} total patients
           </p>
         </div>
 
@@ -161,14 +225,23 @@ function ActiveTreatment() {
                   <path d="m21 21-4.3-4.3"></path>
                 </g>
               </svg>
-              <input type="search" required placeholder="Search for patient" />
+              <input
+                type="search"
+                placeholder="Search for patient"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
             </label>
           </div>
 
           {/* Sort dropdown */}
-          <div className="flex items-center ">
+          <div className="flex items-center">
             <span className="font-outfit text-sm items-center">Order by:</span>
-            <select className="select select-bordered h-10 select-sm font-outfit">
+            <select
+              className="select select-bordered h-10 select-sm font-outfit"
+              value={sortBy}
+              onChange={handleSortChange}
+            >
               <option value="dateAdded">Recently Added</option>
               <option value="name">Name</option>
               <option value="lasttreatment">Last Treatment</option>
@@ -189,83 +262,92 @@ function ActiveTreatment() {
 
       {/* Table container - Scrollable */}
       <div className="flex-1 overflow-auto px-16">
-        <table className="table">
-          {/* head */}
-          <thead className="bg-base-300 sticky top-0 z-10">
-            <tr>
-              <th>
-                <label>
-                  <input
-                    type="checkbox"
-                    className="checkbox"
-                    onChange={handleSelectAll}
-                    checked={
-                      selectedPatients.length === patients.length &&
-                      patients.length > 0
-                    }
-                  />
-                </label>
-              </th>
-              <th>Patient Name</th>
-              <th>WhatsApp</th>
-              <th>Address</th>
-              <th>Registered</th>
-              <th>Last Visit</th>
-              <th>Last Treatment</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {patients.map((patient) => (
-              <tr key={patient.id}>
+        {filteredAndSortedPatients.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {searchTerm
+              ? `No patients found matching "${searchTerm}"`
+              : "No patients found"}
+          </div>
+        ) : (
+          <table className="table">
+            {/* head */}
+            <thead className="bg-base-300 sticky top-0 z-10">
+              <tr>
                 <th>
                   <label>
                     <input
                       type="checkbox"
                       className="checkbox"
-                      checked={selectedPatients.includes(patient.id)}
-                      onChange={() => handleSelectPatient(patient.id)}
+                      onChange={handleSelectAll}
+                      checked={
+                        selectedPatients.length ===
+                          filteredAndSortedPatients.length &&
+                        filteredAndSortedPatients.length > 0
+                      }
                     />
                   </label>
                 </th>
-                <td>
-                  <div className="flex items-center gap-3">
-                    <div className="avatar">
-                      <div className="mask mask-circle w-12 h-12">
-                        {renderPatientImage(patient)}
+                <th>Patient Name</th>
+                <th>WhatsApp</th>
+                <th>Address</th>
+                <th>Registered</th>
+                <th>Last Visit</th>
+                <th>Last Treatment</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAndSortedPatients.map((patient) => (
+                <tr key={patient.id}>
+                  <th>
+                    <label>
+                      <input
+                        type="checkbox"
+                        className="checkbox"
+                        checked={selectedPatients.includes(patient.id)}
+                        onChange={() => handleSelectPatient(patient.id)}
+                      />
+                    </label>
+                  </th>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="avatar">
+                        <div className="mask mask-circle w-12 h-12">
+                          {renderPatientImage(patient)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-bold">{patient.name}</div>
                       </div>
                     </div>
-                    <div>
-                      <div className="font-bold">{patient.name}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  {patient.whatsapp}
-                  <br />
-                </td>
-                <td>{patient.addres}</td>
-                <td>{patient.registered}</td>
-                <td>{patient.last_visit}</td>
-                <td>{patient.last_treatment}</td>
-                <td className="flex gap-2">
-                  <button 
-                    className="btn btn-primary text-xs" 
-                    onClick={() => handleEditPatient(patient)}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    className="btn btn-secondary text-xs" 
-                    onClick={() => handleDelete(patient.id)}
-                  >
-                    Del
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                  <td>
+                    {patient.whatsapp}
+                    <br />
+                  </td>
+                  <td>{patient.addres}</td>
+                  <td>{patient.registered}</td>
+                  <td>{patient.last_visit}</td>
+                  <td>{patient.last_treatment}</td>
+                  <td className="flex gap-2">
+                    <button
+                      className="btn btn-primary text-xs"
+                      onClick={() => handleEditPatient(patient)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-secondary text-xs"
+                      onClick={() => handleDelete(patient.id)}
+                    >
+                      Del
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <AddPatientModal
@@ -278,7 +360,7 @@ function ActiveTreatment() {
         isOpen={isEditOpen}
         onClose={closeEditModal}
         fetchPatients={fetchPatients}
-        patient={editPatient} 
+        patient={editPatient}
       />
     </div>
   );

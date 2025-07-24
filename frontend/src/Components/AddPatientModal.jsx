@@ -134,7 +134,9 @@ function AddPatientModal({ isOpen, onClose, onPatientAdded }) {
       {isOpen && (
         <dialog id="my_modal_1" className="modal modal-open font-figtree">
           <div className="modal-box">
-            <h3 className="font-bold text-2xl mb-4">Add Patient</h3>
+            <h3 className="font-bold text-2xl">Add Patient</h3>
+      <div className="w-full h-px bg-gray-300 flex-shrink-0 mb-4"></div>
+
 
             {error && (
               <div className="alert alert-error mb-4">

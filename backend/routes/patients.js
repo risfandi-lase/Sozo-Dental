@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabase");
 
-// GET all users
 router.get("/", async (req, res) => {
   try {
     const { data, error } = await supabase.from("patients").select("*");
@@ -14,7 +13,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST create user
 router.post("/", async (req, res) => {
   try {
     const {

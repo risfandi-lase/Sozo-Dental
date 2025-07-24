@@ -7,6 +7,7 @@ import Reservations from './Pages/Reservations'
 import PageNotFound from './Pages/PageNotFound'
 import ActiveTreatment from './Components/ActiveTreatment'
 import InactiveTreatment from './Components/InactiveTreatment'
+import StaffList from './Pages/StaffList'
 
 function App() {
   return (
@@ -20,6 +21,8 @@ function App() {
             <Route path='inactive-treatment' element={<InactiveTreatment/>} />
           </Route>
           <Route path="reservations" element={<Reservations />} />
+          <Route path="staff-list" element={<StaffList />} />
+
           <Route path="*" element={<PageNotFound />} />
       </Routes>
       </div>
