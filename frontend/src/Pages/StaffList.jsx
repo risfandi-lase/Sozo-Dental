@@ -1,14 +1,52 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import AddDoctorModal from "../Components/AddDoctorModal";
+import axios from "axios";
 
 function StaffList() {
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const TYPE_COLOR_MAPPING = {
+    "Full-Time": "badge-warning",
+    "Part-Time": "badge-success",
+    Intern: "badge-secondary", // ← Added this
+  };
+
+  // Helper function to get color (fallback for safety)
+  const getTypeColor = (type) => {
+    return TYPE_COLOR_MAPPING[type] || "badge-neutral";
+  };
+
+  const fetchStaff = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:5000/api/staff");
+      const staffData = response.data.map((member) => ({
+        ...member,
+        // Use database type_color if available, otherwise compute it
+        type_color: member.type_color || getTypeColor(member.type),
+      }));
+      setStaff(response.data);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+      setError(error.message || "Failed to fetch staff");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
 
   // Staff data
-  const staffData = [
+  const fallbackStaffData = [
     {
       id: 0,
       name: "Hart Hagerty",
@@ -83,8 +121,16 @@ function StaffList() {
     setOpenMenuIndex(openMenuIndex === index ? null : index);
   };
 
-  const handleDelete = (staffName) => {
-    console.log(`Delete ${staffName}`);
+  const handleDelete = async (staffId, staffName) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/staff/${staffId}`);
+      setStaff((prevStaff) =>
+        prevStaff.filter((member) => member.id !== staffId)
+      );
+      console.log(`Deleted ${staffName}`);
+    } catch (error) {
+      console.error("Error deleting staff:", error);
+    }
     setOpenMenuIndex(null);
   };
 
@@ -128,11 +174,13 @@ function StaffList() {
       </td>
       {renderWorkingDays(staff.working_days)}
       <th>
-        <p className="font-normal">Dental Service</p>
+        <p className="font-normal">{staff.assigned_treatment}</p>
       </th>
       <th>
         <div className="flex items-center justify-between">
-          <p className={`badge opacity-60 font-normal ${staff.typeColor}`}>
+          <p
+            className={`badge opacity-60  font-normal w-25 text ${staff.type_color}`}
+          >
             {staff.type}
           </p>
           <div ref={menuRef} className="relative ml-2">
@@ -166,6 +214,31 @@ function StaffList() {
       </th>
     </tr>
   );
+
+  if (loading) {
+    return (
+      <div className="font-figtree w-full h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="loading loading-spinner loading-lg"></div>
+          <p className="mt-4">Loading staff...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="font-figtree w-full h-full flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Error: {error}</p>
+          <button className="btn btn-primary" onClick={fetchStaff}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="font-figtree w-full h-full flex flex-col overflow-hidden">
@@ -282,9 +355,7 @@ function StaffList() {
             />
           </div>
           <p>
-            <span className="text-4xl font-semibold mx-3">
-              {staffData.length}
-            </span>
+            <span className="text-4xl font-semibold mx-3">{staff.length}</span>
             Doctor
           </p>
         </div>
@@ -301,27 +372,37 @@ function StaffList() {
         </div>
       </div>
 
-      <AddDoctorModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <AddDoctorModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onStaffAdded={fetchStaff}
+      />
 
       {/* Table */}
       <div className="overflow-x-auto px-16">
-        <table className="table">
-          <thead className="bg-base-300">
-            <tr>
-              <th>
-                <label>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </th>
-              <th>Name</th>
-              <th>Contact</th>
-              <th>Working Days</th>
-              <th>Assigned Treatment</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody>{staffData.map(renderStaffRow)}</tbody>
-        </table>
+        {staff.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No staff members found.</p>
+          </div>
+        ) : (
+          <table className="table">
+            <thead className="bg-base-300">
+              <tr>
+                <th>
+                  <label>
+                    <input type="checkbox" className="checkbox" />
+                  </label>
+                </th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Working Days</th>
+                <th>Assigned Treatment</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>{staff.map(renderStaffRow)}</tbody>
+          </table>
+        )}
       </div>
     </div>
   );
