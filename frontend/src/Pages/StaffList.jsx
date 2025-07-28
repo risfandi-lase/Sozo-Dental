@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import user from "../assets/user.jpg";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import AddDoctorModal from "../Components/AddDoctorModal";
 import axios from "axios";
@@ -157,8 +158,8 @@ function StaffList() {
       <td>
         <div className="flex items-center gap-3">
           <div className="avatar">
-            <div className="mask mask-squircle h-12 w-12">
-              <img src={staff.avatar} alt="Avatar" />
+            <div className="mask mask-circle h-12 w-12">
+              <img src={staff.image} alt="Avatar" />
             </div>
           </div>
           <div>
@@ -329,7 +330,7 @@ function StaffList() {
 
           <div className="flex items-center gap-2">
             <img
-              src="https://img.daisyui.com/images/profile/demo/2@94.webp"
+              src={user}
               alt=""
               className="w-8 h-8 rounded-full object-cover"
             />

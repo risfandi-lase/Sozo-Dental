@@ -2,12 +2,10 @@ import { useState } from "react";
 
 export default function CheckboxList() {
   const [selectedItems, setSelectedItems] = useState({
-    teethWhitening: true,
-    dentalVeneers: false,
-    dentalBonding: false,
-    dentalCrown: true,
-    inlaysOnlays: true,
-    dentalImplants: true,
+    bridges: false,
+    crowns: true,
+    fillings: false,
+    rootcanaltreatments: true,
   });
 
   const items = [
@@ -27,10 +25,10 @@ export default function CheckboxList() {
   const selectedCount = Object.values(selectedItems).filter(Boolean).length;
 
   return (
-    <div className="max-w-md  bg-white p-2 rounded-lg  font-figtree  ">
-      <div className="mb-1 flex items-center">
-        <h3 className=" ml-3">Treatments services</h3>
-        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+    <div className="max-w-md bg-white p-2 rounded-lg font-figtree">
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="ml-3">Treatment services</h3>
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
           {selectedCount} selected
         </span>
       </div>
@@ -39,18 +37,18 @@ export default function CheckboxList() {
         {items.map((item) => (
           <label
             key={item.id}
-            className="flex items-center cursor-pointer group border-t  text-gray-100 p-3 "
+            className="flex items-center cursor-pointer group border-t text-gray-100 hover:bg-gray-50 p-3"
           >
             <div className="relative">
               <input
                 type="checkbox"
-                checked={selectedItems[item.id]}
+                checked={selectedItems[item.id] || false}
                 onChange={() => handleToggle(item.id)}
                 className="sr-only"
               />
               <div
                 className={`
-                w-5 h-5 rounded border-1 flex items-center justify-center transition-all duration-200
+                w-5 h-5 rounded border flex items-center justify-center transition-all duration-200
                 ${
                   selectedItems[item.id]
                     ? "bg-indigo-500 border-indigo-500"
@@ -75,7 +73,7 @@ export default function CheckboxList() {
                 )}
               </div>
             </div>
-            <span className="ml-3 text-sm text-black">{item.label}</span>
+            <span className="ml-3 text-sm text-gray-800">{item.label}</span>
           </label>
         ))}
       </div>

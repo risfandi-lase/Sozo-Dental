@@ -2,9 +2,64 @@ import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import CheckboxCosmeticService from "./CheckboxCosmeticService";
 import CheckboxTreatments from "./CheckboxTreatments";
+import axios from "axios";
 
 function AddDoctorModal({ isOpen, onClose }) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [imagePreview, setImagePreview] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+      const [error, setError] = useState("");
+
+
+  const [formData, setFormData] = useState({
+    name: "",
+    number: "",
+    assigned_treatment: "",
+    type: "",
+    specialist: "",
+    email: "",
+    working_days:[],
+    image: null,
+  });
+
+   const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    console.log("Form submitted with data:", formData);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/patients",
+        formData
+      );
+
+      console.log("Success:", response.data);
+      onPatientAdded(response.data);
+      onClose();
+    } catch (error) {
+      console.error(
+        "Error adding patient:",
+        error.response?.data || error.message
+      );
+      setError(
+        error.response?.data?.error ||
+          "Failed to add patient. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   // State to track which days are enabled
   const [workingDays, setWorkingDays] = useState({
@@ -47,6 +102,8 @@ function AddDoctorModal({ isOpen, onClose }) {
       [day]: !prev[day],
     }));
   };
+
+  
 
   const steps = [
     {
@@ -104,7 +161,7 @@ function AddDoctorModal({ isOpen, onClose }) {
 
   // Helper function to render a day row
   const renderDayRow = (day, displayName) => (
-    <div key={day} className="flex gap-2 items-center min-h-[3rem]">
+    <div key={day} className="flex mt-2gap-2 items-center min-h-[3rem]">
       <input
         type="checkbox"
         checked={workingDays[day]}
@@ -113,7 +170,7 @@ function AddDoctorModal({ isOpen, onClose }) {
       />
       <p className="w-20">{displayName}</p>
 
-      <div className="flex items-center ml-auto gap-5 text-gray-500 w-80 justify-end">
+      <div className="flex items-center ml-auto gap-5 text-gray-500 w-80  ">
         {workingDays[day] ? (
           <>
             <fieldset className="fieldset">
@@ -125,7 +182,7 @@ function AddDoctorModal({ isOpen, onClose }) {
             </fieldset>
           </>
         ) : (
-          <p className="text-gray-400 italic">Not working this day</p>
+          <p className="text-gray-400 italic mr-auto">Not working this day</p>
         )}
       </div>
     </div>
@@ -136,9 +193,37 @@ function AddDoctorModal({ isOpen, onClose }) {
       case 1:
         return (
           <div className="space-y-4">
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Pick a file</legend>
-              <input type="file" className="file-input w-full" />
+            <fieldset className="fieldset col-span-4">
+              <legend className="fieldset-legend text-sm">Image</legend>
+              <div className="flex gap-4 items-start ">
+                <div className="flex-shrink-0 w-32">
+                  {imagePreview ? (
+                    <img
+                      src={imagePreview}
+                      alt="Image Preview"
+                      className="w-25 h-25 object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-25 h-25 bg-gray-100 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center">
+                      <span className="text-gray-400 text-xs text-center">
+                        Avatar
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    name="image"
+                    className="file-input w-full"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/svg+xml"
+                  />
+                  <p className="text-gray-400 mt-4">
+                    An image of the person, it's best if it has the same length
+                    and height
+                  </p>
+                </div>
+              </div>
             </fieldset>
 
             <div className="flex flex-col">
@@ -175,6 +260,7 @@ function AddDoctorModal({ isOpen, onClose }) {
             <fieldset className="fieldset">
               <legend className="fieldset-legend">Name</legend>
               <input
+              onChange={handleChange}
                 type="text"
                 className="input w-full"
                 placeholder="Enter doctor's name"
@@ -184,6 +270,8 @@ function AddDoctorModal({ isOpen, onClose }) {
             <fieldset className="fieldset">
               <legend className="fieldset-legend">Number</legend>
               <input
+                            onChange={handleChange}
+
                 type="text"
                 className="input w-full"
                 placeholder="Enter phone number"
@@ -210,6 +298,8 @@ function AddDoctorModal({ isOpen, onClose }) {
                   </g>
                 </svg>
                 <input
+                              onChange={handleChange}
+
                   type="email"
                   placeholder="mail@site.com"
                   required
@@ -246,7 +336,7 @@ function AddDoctorModal({ isOpen, onClose }) {
 
       case 3:
         return (
-          <div className="space-y-4">
+          <div className="space-y-4 mt-12">
             {renderDayRow("monday", "Monday")}
             {renderDayRow("tuesday", "Tuesday")}
             {renderDayRow("wednesday", "Wednesday")}
@@ -275,9 +365,9 @@ function AddDoctorModal({ isOpen, onClose }) {
       <button
         type="button"
         className="btn btn-primary"
-        onClick={currentStep === 3 ? handleClose : nextStep}
+        onClick={currentStep === 3 ? handleSubmit : nextStep}
       >
-        {currentStep === 3 ? "Finish" : "Next"}
+        {currentStep === 3 ? "Save" : "Next"}
       </button>
     </div>
   );

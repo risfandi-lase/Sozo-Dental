@@ -84,11 +84,25 @@ function EditPatientModal({ isOpen, onClose, fetchPatients, patient }) {
         setError("Failed to process image");
       }
     } else {
+      // When no file is selected, clear the image
       setFormData((prevData) => ({
         ...prevData,
-        image: null,
+        image: "",
       }));
       setImagePreview(null);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      image: "",
+    }));
+    setImagePreview(null);
+    // Clear the file input
+    const fileInput = document.querySelector('input[type="file"][name="image"]');
+    if (fileInput) {
+      fileInput.value = "";
     }
   };
 
@@ -223,22 +237,39 @@ function EditPatientModal({ isOpen, onClose, fetchPatients, patient }) {
 
                 <fieldset className="fieldset col-span-4">
                   <legend className="fieldset-legend text-sm">Image</legend>
-                  <input
-                    onChange={handleFileChange}
-                    type="file"
-                    name="image"
-                    className="file-input w-full"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/svg+xml"
-                  />
-                  {imagePreview && (
-                    <div className="mt-2">
-                      <img
-                        src={imagePreview}
-                        alt="Image Preview"
-                        className="w-32 h-32 object-cover rounded-md"
-                      />
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-32 relative">
+                      {imagePreview ? (
+                        <div className="relative">
+                          <img
+                            src={imagePreview}
+                            alt="Image Preview"
+                            className="w-32 h-32 object-cover rounded-full"
+                          />
+                    
+                        </div>
+                      ) : (
+                        <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center">
+                          <span className="text-gray-400 text-xs text-center">
+                            Avatar
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="flex-1">
+                      <input
+                        onChange={handleFileChange}
+                        type="file"
+                        name="image"
+                        className="file-input w-full"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/svg+xml"
+                      />
+                      <p className="text-gray-400 mt-4">
+                        An image of the person, it's best if it has the same
+                        length and height
+                      </p>
+                    </div>
+                  </div>
                 </fieldset>
               </div>
 
