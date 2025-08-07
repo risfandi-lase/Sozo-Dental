@@ -7,15 +7,45 @@ import axios from "axios";
 function StaffList() {
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const formatPhoneNumber = (phone) => {
+  // Handle null, undefined, or empty values
+  if (!phone) return '';
+  
+  // Convert to string if it's a number
+  const phoneStr = String(phone);
+  
+  // Remove all non-digits except the + sign
+  const cleaned = phoneStr.replace(/[^\d+]/g, '');
+  
+  // Format Indonesian phone numbers (+62-XXX-XXXX-XXXX)
+  if (cleaned.startsWith('+62') && cleaned.length >= 10) {
+    return cleaned.replace(/(\+62)(\d{3})(\d{4})(\d{4}).*/, '$1-$2-$3-$4');
+  }
+  
+  // Format if it starts with 62 (without +)
+  if (cleaned.startsWith('62') && cleaned.length >= 9) {
+    return `+${cleaned.replace(/^(62)(\d{3})(\d{4})(\d{4}).*/, '$1-$2-$3-$4')}`;
+  }
+  
+  // Format if it starts with 0 (local format like 0857...)
+  if (cleaned.startsWith('0') && cleaned.length >= 10) {
+    // Convert 0857... to +62-857-...
+    const withoutZero = cleaned.substring(1);
+    return `+62-${withoutZero.replace(/(\d{3})(\d{4})(\d{4}).*/, '$1-$2-$3-$4')}`;
+  }
+  
+  // Return original string if no pattern matches
+  return phoneStr;
+};
+
   const TYPE_COLOR_MAPPING = {
     "Full-Time": "badge-warning",
     "Part-Time": "badge-success",
-    Intern: "badge-secondary", // ← Added this
+    "Intern": "badge-secondary",
   };
 
   // Helper function to get color (fallback for safety)
@@ -29,10 +59,9 @@ function StaffList() {
       const response = await axios.get("http://localhost:5000/api/staff");
       const staffData = response.data.map((member) => ({
         ...member,
-        // Use database type_color if available, otherwise compute it
         type_color: member.type_color || getTypeColor(member.type),
       }));
-      setStaff(response.data);
+      setStaff(staffData);
       setError(null);
     } catch (error) {
       console.error("Error fetching staff:", error);
@@ -46,57 +75,9 @@ function StaffList() {
     fetchStaff();
   }, []);
 
-  // Staff data
-  const fallbackStaffData = [
-    {
-      id: 0,
-      name: "Hart Hagerty",
-      specialist: "Oral Surgeon",
-      number: "0867 7040 3043",
-      email: "harthagerty@gmail.com",
-      avatar: "https://img.daisyui.com/images/profile/demo/2@94.webp",
-      working_days: [false, false, true, false, true, true, true],
-      type: "Full-Time",
-      typeColor: "badge-warning",
-    },
-    {
-      id: 1,
-      name: "Brice Swyre",
-      specialist: "Gear Conversion",
-      number: "0875 5433 8766",
-      email: "brice123@gmail.com",
-      avatar: "https://img.daisyui.com/images/profile/demo/3@94.webp",
-      working_days: [true, true, false, false, true, true, true],
-      type: "Full-Time",
-      typeColor: "badge-warning",
-    },
-    {
-      id: 2,
-      name: "Marjy Ferencz",
-      specialist: "Pediatric Dentistry",
-      number: "0922 4355 46211",
-      email: "marferen@yahoo.com",
-      avatar: "https://img.daisyui.com/images/profile/demo/4@94.webp",
-      working_days: [true, true, false, true, false, true, true],
-      type: "Full-Time",
-      typeColor: "badge-warning",
-    },
-    {
-      id: 3,
-      name: "Yancy Tear",
-      specialist: "Oral Surgeon",
-      number: "1900 431 2424 21",
-      email: "redot.ter333@acetrous.com",
-      avatar: "https://img.daisyui.com/images/profile/demo/5@94.webp",
-      working_days: [true, false, true, true, true, true, false],
-      type: "Part-Time",
-      typeColor: "badge-success",
-    },
-  ];
-
   const dayIcons = [
     "mdi:alphabet-s-circle",
-    "mdi:alphabet-m-circle",
+    "mdi:alphabet-m-circle", 
     "mdi:alphabet-t-circle",
     "mdi:alphabet-w-circle",
     "mdi:alphabet-t-circle",
@@ -104,10 +85,11 @@ function StaffList() {
     "mdi:alphabet-s-circle",
   ];
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside - FIXED VERSION
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      // Check if the click is outside any dropdown menu
+      if (!event.target.closest('.dropdown-menu') && !event.target.closest('.menu-trigger')) {
         setOpenMenuIndex(null);
       }
     };
@@ -120,19 +102,6 @@ function StaffList() {
 
   const toggleMenu = (index) => {
     setOpenMenuIndex(openMenuIndex === index ? null : index);
-  };
-
-  const handleDelete = async (staffId, staffName) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/staff/${staffId}`);
-      setStaff((prevStaff) =>
-        prevStaff.filter((member) => member.id !== staffId)
-      );
-      console.log(`Deleted ${staffName}`);
-    } catch (error) {
-      console.error("Error deleting staff:", error);
-    }
-    setOpenMenuIndex(null);
   };
 
   const renderWorkingDays = (activeDays) => (
@@ -148,8 +117,45 @@ function StaffList() {
     </td>
   );
 
-  const renderStaffRow = (staff) => (
-    <tr key={staff.id}>
+  const handleDelete = async (staffId, staffName) => {
+    console.log("Delete button clicked!");
+    console.log("Staff ID:", staffId);
+    console.log("Staff Name:", staffName);
+    
+    if (!window.confirm(`Are you sure you want to delete ${staffName}?`)) {
+      console.log("Delete cancelled by user");
+      return;
+    }
+    
+    try {
+      console.log("Making DELETE request...");
+      const response = await axios.delete(`http://localhost:5000/api/staff/${staffId}`);
+      console.log("Delete response:", response);
+      
+      setStaff((prevStaff) => {
+        const newStaff = prevStaff.filter((member) => member.id !== staffId);
+        console.log("Updated staff list:", newStaff);
+        return newStaff;
+      });
+      
+      console.log(`Successfully deleted ${staffName}`);
+    } catch (error) {
+      console.error("Error deleting staff:", error);
+      console.error("Error response:", error.response?.data);
+      alert(`Failed to delete ${staffName}: ${error.message}`);
+    }
+    setOpenMenuIndex(null);
+  };
+
+  const renderStaffRow = (staffMember) => {
+  const treatments = staffMember.assigned_treatment
+    ? staffMember.assigned_treatment.split(", ")
+    : [];
+  const displayTreatments = treatments.slice(0, 2).join(", ");
+  const remainingCount = treatments.length > 2 ? treatments.length - 2 : 0;
+
+  return (
+    <tr key={staffMember.id}>
       <th>
         <label>
           <input type="checkbox" className="checkbox" />
@@ -159,35 +165,40 @@ function StaffList() {
         <div className="flex items-center gap-3">
           <div className="avatar">
             <div className="mask mask-circle h-12 w-12">
-              <img src={staff.image} alt="Avatar" />
+              <img src={staffMember.image} alt="Avatar" />
             </div>
           </div>
           <div>
-            <div className="font-bold">{staff.name}</div>
-            <div className="text-sm opacity-50">{staff.specialist}</div>
+            <div className="font-bold">{staffMember.name}</div>
+            <div className="text-sm opacity-50">{staffMember.specialist}</div>
           </div>
         </div>
       </td>
       <td>
-        {staff.number}
+        {formatPhoneNumber(staffMember.number)}
         <br />
-        <span className="link text-info">{staff.email}</span>
+        <span className="link text-info">{staffMember.email}</span>
       </td>
-      {renderWorkingDays(staff.working_days)}
+      {renderWorkingDays(staffMember.working_days)}
       <th>
-        <p className="font-normal">{staff.assigned_treatment}</p>
+        <p className="font-normal">
+          {displayTreatments}
+          {remainingCount > 0 && (
+            <span className="text-info"> +{remainingCount}</span>
+          )}
+        </p>
       </th>
       <th>
         <div className="flex items-center justify-between">
           <p
-            className={`badge opacity-60  font-normal w-25 text ${staff.type_color}`}
+            className={`badge opacity-60 font-normal w-25 text ${staffMember.type_color}`}
           >
-            {staff.type}
+            {staffMember.type}
           </p>
-          <div ref={menuRef} className="relative ml-2">
+          <div className="relative ml-2">
             <button
-              onClick={() => toggleMenu(staff.id)}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              onClick={() => toggleMenu(staffMember.id)}
+              className="menu-trigger p-1 hover:bg-gray-100 rounded-full transition-colors"
             >
               <Icon
                 icon="mdi:dots-vertical"
@@ -195,10 +206,13 @@ function StaffList() {
                 style={{ color: "#666" }}
               />
             </button>
-            {openMenuIndex === staff.id && (
-              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+            {openMenuIndex === staffMember.id && (
+              <div className="dropdown-menu absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
                 <button
-                  onClick={() => handleDelete(staff.name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(staffMember.id, staffMember.name);
+                  }}
                   className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600 transition-colors"
                 >
                   <Icon
@@ -215,6 +229,7 @@ function StaffList() {
       </th>
     </tr>
   );
+};
 
   if (loading) {
     return (
@@ -227,7 +242,6 @@ function StaffList() {
     );
   }
 
-  // Handle error state
   if (error) {
     return (
       <div className="font-figtree w-full h-full flex items-center justify-center">
@@ -345,7 +359,7 @@ function StaffList() {
       <div className="w-full h-px bg-gray-300 flex-shrink-0"></div>
 
       {/* Stats section */}
-      <div className="flex items-center justify-between px-16  py-8 flex-shrink-0 bg-white">
+      <div className="flex items-center justify-between px-16 py-8 flex-shrink-0 bg-white">
         <div className="flex items-center">
           <div>
             <Icon

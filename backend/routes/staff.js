@@ -46,4 +46,17 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const {id} = req.params
+    const {error} = await supabase.from("staff").delete().eq("id", id)
+    if (error) throw error;
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

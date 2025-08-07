@@ -1,29 +1,20 @@
-import { useState } from "react";
+import React from "react";
 
-export default function CheckboxList() {
-  const [selectedItems, setSelectedItems] = useState({
-    teethWhitening: true,
-    dentalVeneers: false,
-    dentalBonding: false,
-    dentalCrown: true,
-    inlaysOnlays: true,
-    dentalImplants: true,
-  });
+const items = [
+  { id: "teethWhitening", label: "General Dentist Service" },
+  { id: "dentalVeneers", label: "Oral Disease Service" },
+  { id: "dentalBonding", label: "TMJ Disorder Service" },
+  { id: "dentalCrown", label: "Smile Enchanchement Service" },
+  { id: "inlaysOnlays", label: "Root Canal Service" },
+  { id: "dentalImplants", label: "Oral Pathology Service" },
+];
 
-  const items = [
-    { id: "teethWhitening", label: "Teeth Whitening" },
-    { id: "dentalVeneers", label: "Dental Veneers" },
-    { id: "dentalBonding", label: "Dental Bonding" },
-    { id: "dentalCrown", label: "Dental Crown" },
-    { id: "inlaysOnlays", label: "Inlays and Onlays" },
-    { id: "dentalImplants", label: "Dental Implants" },
-  ];
-
+export default function CheckboxCosmeticService({
+  selectedItems,
+  onSelectionChange,
+}) {
   const handleToggle = (itemId) => {
-    setSelectedItems((prev) => ({
-      ...prev,
-      [itemId]: !prev[itemId],
-    }));
+    onSelectionChange(itemId);
   };
 
   const selectedCount = Object.values(selectedItems).filter(Boolean).length;
@@ -46,7 +37,7 @@ export default function CheckboxList() {
             <div className="relative">
               <input
                 type="checkbox"
-                checked={selectedItems[item.id]}
+                checked={selectedItems[item.id] || false}
                 onChange={() => handleToggle(item.id)}
                 className="sr-only"
               />

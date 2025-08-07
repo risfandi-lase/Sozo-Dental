@@ -1,25 +1,15 @@
-import { useState } from "react";
+import React from "react";
 
-export default function CheckboxList() {
-  const [selectedItems, setSelectedItems] = useState({
-    bridges: false,
-    crowns: true,
-    fillings: false,
-    rootcanaltreatments: true,
-  });
+const items = [
+  { id: "bridges", label: "Bridges" },
+  { id: "crowns", label: "Crowns" },
+  { id: "fillings", label: "Fillings" },
+  { id: "rootcanaltreatments", label: "Root Canal Treatments" },
+];
 
-  const items = [
-    { id: "bridges", label: "Bridges" },
-    { id: "crowns", label: "Crowns" },
-    { id: "fillings", label: "Fillings" },
-    { id: "rootcanaltreatments", label: "Root Canal Treatments" },
-  ];
-
+export default function CheckboxTreatments({ selectedItems, onSelectionChange }) {
   const handleToggle = (itemId) => {
-    setSelectedItems((prev) => ({
-      ...prev,
-      [itemId]: !prev[itemId],
-    }));
+    onSelectionChange(itemId);
   };
 
   const selectedCount = Object.values(selectedItems).filter(Boolean).length;
